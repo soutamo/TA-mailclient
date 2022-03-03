@@ -13,3 +13,4 @@ Contributors
 * [François Lacombe](mailto:flacombe@adista.fr)
 * [Nathan Worsham](mailto:nworsham@gmail.com)
 * [Lowell Alleman](mailto:lowell@kintyre.co)
+* [Ismo Soutamo](mailto:ismo.soutamo@iki.fi)
