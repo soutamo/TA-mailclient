@@ -1,0 +1,34 @@
+<form>
+  <label>Received emails</label>
+  <description>Received emails header information</description>
+  <fieldset submitButton="false">
+    <input type="time" token="timepicker">
+      <label>Timepicker</label>
+      <default>
+        <earliest>-7d@h</earliest>
+        <latest>now</latest>
+      </default>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <table>
+        <search>
+          <query>`mail_ta_index` sourcetype=imap
+| table _time host date from to subject message_id</query>
+          <earliest>$timepicker.earliest$</earliest>
+          <latest>$timepicker.latest$</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="count">25</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="percentagesRow">false</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">false</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+  </row>
+</form>

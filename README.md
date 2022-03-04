@@ -39,9 +39,9 @@
 
 #### About the TA-mailclient
 
-| Author | Oluwaseun Remi-Omosowon |
+| Author | Oluwaseun Remi-Omosowon | Ismo Soutamo (forked version)
 | --- | --- |
-| App Version | 1.6.0 |
+| App Version | 1.6.1 |
 | Vendor Products | <ul><li>poplib</li><li>imaplib</li><li>SDK for Python 1.6.14</li></ul> |
 
 The TA-mailclient add-on fetches emails for Splunk to index from mailboxes
@@ -86,7 +86,7 @@ Includes:
 
 ##### About this release
 
-Version 1.6.0 of the TA-mailclient is compatible with:
+Version 1.6.1 of the TA-mailclient is compatible with:
 
 | Splunk Enterprise versions | 8.x, 7.x |
 | --- | --- |
@@ -110,17 +110,15 @@ as it requires Python which comes with an HF or a full Splunk install.
 
 TA-mailclient includes the following new features:
 
-- Added support for Python 3
-- Added six 1.15.0
-- Upgraded Splunk SDK to 1.6.14
-- Fix CI/CD tests to work for POP3 on v7.3, fix testing
-- Added Fix for working with Zips and docx with python2/python3
-- Added support for indexing emails from additional folders when using IMAP
+- Added support for different stanza name and used mail_user
+    - NOTE: The one must add mail_user parameter into inputs.conf!
+- Added some views to check status
 
 ##### To Do
 
 - Add attachment file hash to Splunk
 - Add support for doc / ppt / pptx
+- If mail_user is not defined use stanza_name as mail_user (no need for convert old stanzas)
 
 ##### Known issues
 
@@ -137,6 +135,11 @@ Current contributors are listed in AUTHORS.md.
 
 
 ##### Older Releases
+* v1.6.1
+    * Fix _time for different Date format
+    * Separate stanza name from mail account name
+    * Added some views to check status
+
 * v1.6.0
     * Includes support for dropping attachments
     * Migrated CICD to CircleCI
@@ -285,7 +288,8 @@ Because this add-on runs on Splunk Enterprise, all of the [Splunk Enterprise sys
 
 Download the TA-mailclient at one of the following locaitons:
 - [Splunkbase](https://splunkbase.splunk.com/app/3200/#/details)
-- [Github](https://github.com/seunomosowon/TA-mailclient)
+- [Github](https://github.com/seunomosowon/TA-mailclient) original
+- [Github](https://github.com/soutamo/TA-mailclient) modified version
 
 #### Installation steps
 

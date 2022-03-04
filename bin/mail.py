@@ -1,5 +1,4 @@
-#!/opt/splunk/bin/python
-
+#!/usr/bin/env python
 from __future__ import unicode_literals
 
 import imaplib
@@ -44,6 +43,7 @@ class Mail(Script):
         scheme = Scheme("Mail Server")
         scheme.description = "Streams events from from a mail server."
         scheme.use_external_validation = True
+        # This is a Stanza name
         name = Argument(
             name="name",
             title="E-mail",
@@ -74,6 +74,15 @@ class Mail(Script):
             required_on_create=True
         )
         scheme.add_argument(mailserver)
+        mail_user = Argument(
+            name="mail_user",
+            title="Account User Id",
+            description="Enter User id for mail account",
+            data_type=Argument.data_type_string,
+            required_on_edit=True,
+            required_on_create=True
+        )
+        scheme.add_argument(mail_user)
         password = Argument(
             name="password",
             title="Account Password",
@@ -160,12 +169,13 @@ class Mail(Script):
         """
         This encrypts the password stored in inputs.conf for the input name passed as an argument.
         """
-        kwargs = dict(host=self.mailserver, password=PASSWORD_PLACEHOLDER, mailserver=self.mailserver,
+        kwargs = dict(host=self.mailserver, password=PASSWORD_PLACEHOLDER,
+                      mail_user=self.mail_user, mailserver=self.mailserver,
                       protocol=self.protocol, mailbox_cleanup=self.mailbox_cleanup,
                       include_headers=self.include_headers, maintain_rfc=self.maintain_rfc,
                       attach_message_primary=self.attach_message_primary)
         try:
-            self.service.inputs[self.username].update(**kwargs).refresh()
+            self.service.inputs[self.stanza_name].update(**kwargs).refresh()
         except Exception as e:
             self.disable_input()
             raise Exception("Error updating inputs.conf - %s" % e)
@@ -180,7 +190,7 @@ class Mail(Script):
         if storagepasswords is not None:
             for credential_entity in storagepasswords:
                 """ Use password in storage endpoint if realm matches """
-                if credential_entity.username == self.username and credential_entity.realm == self.realm:
+                if credential_entity.username == self.stanza_name and credential_entity.realm == self.realm:
                     return credential_entity
         else:
             return None
@@ -193,11 +203,11 @@ class Mail(Script):
         """
         storagepasswords = self.service.storage_passwords
         try:
-            sp = storagepasswords.create(password=self.password, username=self.username, realm=self.realm)
+            sp = storagepasswords.create(password=self.password, username=self.stanza_name, realm=self.realm)
         except Exception as e:
             self.disable_input()
             raise Exception("Could not create password entry {%s:%s} in passwords.conf: %s" % (
-                self.username, self.realm, e))
+                self.stanza_name, self.realm, e))
         return sp
 
     def delete_password(self):
@@ -205,11 +215,11 @@ class Mail(Script):
         This deletes the password stored in inputs.conf for the input name passed as an argument.
         """
         try:
-            self.service.storage_passwords.delete(self.username, self.realm)
+            self.service.storage_passwords.delete(self.stanza_name, self.realm)
         except Exception as e:
             self.disable_input()
             raise Exception("Could not delete credential {%s:%s} from passwords.conf: %s" % (
-                self.username, self.realm, e))
+                self.stanza_name, self.realm, e))
 
     def disable_input(self):
         """
@@ -217,7 +227,7 @@ class Mail(Script):
         :return: Returns the disabled input
         :rtype: Entity
         """
-        self.service.inputs[self.username].disable()
+        self.service.inputs[self.stanza_name].disable()
 
     def save_password(self):
         """
@@ -256,13 +266,13 @@ class Mail(Script):
         mailclient = imaplib.IMAP4_SSL(self.mailserver)
         try:
             # mailclient.debug = 4
-            self.log(EventWriter.INFO, "IMAP - Connecting to mailbox as %s" % self.username)
-            mailclient.login(credential.username, credential.clear_password)
+            self.log(EventWriter.INFO, "IMAP - Connecting to mailbox %s as %s" % (self.stanza_name, self.mail_user))
+            mailclient.login(self.mail_user, credential.clear_password)
         except imaplib.IMAP4.error:
-            raise MailLoginFailed(self.mailserver, credential.username)
+            raise MailLoginFailed(self.mailserver, self.mail_user)
         except (socket.error, SSLError) as e:
             raise MailConnectionError(e)
-        self.log(EventWriter.INFO, "Listing folders in mailbox=%s" % self.username)
+        self.log(EventWriter.INFO, "Listing folders in mailbox=%s" % self.stanza_name)
         # with Capturing() as output:
         status, imap_list = mailclient.list()
         if status == 'OK':
@@ -310,7 +320,7 @@ class Mail(Script):
                                     # if not locate_checkpoint(...): then message deletion has been delayed until next run
                                 elif not locate_checkpoint(self.checkpoint_dir, message_mid):
                                     logevent = Event(
-                                        stanza=self.username,
+                                        stanza=self.stanza_name,
                                         data=msg,
                                         host=self.mailserver,
                                         source="{}/{}".format(self.input_name, each_folder),
@@ -326,7 +336,7 @@ class Mail(Script):
                                     mailclient.expunge()
                         num += 1
             self.log(EventWriter.INFO,
-                     "Retrieved %d mails from mailbox: %s/%s" % (mails_retrieved, self.username, each_folder))
+                     "Retrieved %d mails from mailbox: %s/%s" % (mails_retrieved, self.stanza_name, each_folder))
 
         mailclient.close()
         mailclient.logout()
@@ -346,12 +356,12 @@ class Mail(Script):
             raise MailProtocolError(str(e))
         try:
             mailclient.set_debuglevel(2)
-            self.log(EventWriter.INFO, "POP3 - Connecting to mailbox as %s" % self.username)
-            self.log(EventWriter.INFO, "POP3 debug: %s" % mailclient.user(credential.username))
+            self.log(EventWriter.INFO, "POP3 - Connecting to mailbox %s as %s" % (self.stanza_name, self.mail_user))
+            self.log(EventWriter.INFO, "POP3 debug: %s" % mailclient.user(self.mail_user))
             mailclient.set_debuglevel(1)
             self.log(EventWriter.INFO, "POP3 debug: %s" % mailclient.pass_(credential.clear_password))
         except poplib.error_proto:
-            raise MailLoginFailed(self.mailserver, credential.username)
+            raise MailLoginFailed(self.mailserver, self.mail_user)
         num = 0
         mails_retrieved = 0
         (num_of_messages, totalsize) = mailclient.stat()
@@ -360,7 +370,7 @@ class Mail(Script):
                 num += 1
                 (header, lines, octets) = mailclient.retr(num)
                 # raw_email = '\n'.join(lines)
-                raw_email = '\n'.join(s.decode("utf-8", "ignore") if isinstance(s,  binary_type) else s for s in lines)
+                raw_email = '\n'.join(s.decode("utf-8", "ignore") if isinstance(s, binary_type) else s for s in lines)
                 message_time, message_mid, msg = email_mime.parse_email(
                     raw_email,
                     self.include_headers,
@@ -373,7 +383,7 @@ class Mail(Script):
                     if not locate_checkpoint(self.checkpoint_dir, message_mid):
                         """index the mail if it is readonly or if the mail will be deleted"""
                         logevent = Event(
-                            stanza=self.username,
+                            stanza=self.stanza_name,
                             data=msg,
                             host=self.mailserver,
                             source=self.input_name,
@@ -391,7 +401,7 @@ class Mail(Script):
                         self.log(EventWriter.DEBUG, "Found a mail that had already been indexed: %s" % message_mid)
                         mailclient.dele(num)
             mailclient.quit()
-            self.log(EventWriter.INFO, "Retrieved %d mails from mailbox: %s" % (mails_retrieved, self.username))
+            self.log(EventWriter.INFO, "Retrieved %d mails from mailbox: %s" % (mails_retrieved, self.stanza_name))
 
     def stream_events(self, inputs, ew):
         try:
@@ -418,7 +428,8 @@ class Mail(Script):
         input_name, input_item = input_list
         self.input_name = input_name
         self.mailserver = input_item["mailserver"]
-        self.username = input_name.split("://")[1]
+        self.stanza_name = input_name.split("://")[1]
+        self.mail_user = input_item['mail_user']
         self.password = input_item["password"]
         self.protocol = input_item['protocol']
         # Optional Parameters
@@ -447,11 +458,11 @@ class Mail(Script):
         else:
             self.drop_attachment = DEFAULT_DROP_ATTACHMENT
         self.checkpoint_dir = inputs.metadata['checkpoint_dir']
-        match = re.match(REGEX_EMAIL, self.username)
+        match = re.match(REGEX_EMAIL, self.stanza_name)
         if not match:
             ew.log(EventWriter.ERROR, "Modular input name must be an email address")
             self.disable_input()
-            raise MailExceptionStanzaNotEmail(self.username)
+            raise MailExceptionStanzaNotEmail(self.stanza_name)
         self.save_password()
         if "POP3" == self.protocol:
             self.stream_pop_emails()

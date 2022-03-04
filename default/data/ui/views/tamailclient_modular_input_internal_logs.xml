@@ -1,0 +1,35 @@
+<form>
+  <label>TA-mailclient modular input internal logs</label>
+  <fieldset submitButton="false">
+    <input type="time" token="timepicker">
+      <label>Timepicker</label>
+      <default>
+        <earliest>-60m@m</earliest>
+        <latest>now</latest>
+      </default>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <event>
+        <search>
+          <query>index=_internal sourcetype=splunkd (component=ModularInputs OR component=ExecProcessor) mail.py</query>
+          <earliest>$timepicker.earliest$</earliest>
+          <latest>$timepicker.latest$</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="count">25</option>
+        <option name="list.drilldown">none</option>
+        <option name="list.wrap">1</option>
+        <option name="maxLines">5</option>
+        <option name="raw.drilldown">full</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">0</option>
+        <option name="table.drilldown">all</option>
+        <option name="table.sortDirection">asc</option>
+        <option name="table.wrap">1</option>
+        <option name="type">list</option>
+      </event>
+    </panel>
+  </row>
+</form>

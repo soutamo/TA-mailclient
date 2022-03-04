@@ -1,3 +1,16 @@
 []
 export = system
 
+[macros/mail_ta_index]
+access = read : [ * ], write : [ admin ]
+export = none
+
+[views/received_emails]
+access = read : [ * ], write : [ admin, power ]
+export = none
+owner = nobody
+
+[views/tamailclient_modular_input_internal_logs]
+access = read : [ * ], write : [ admin, power ]
+export = none
+owner = nobody

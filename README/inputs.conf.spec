@@ -1,11 +1,14 @@
 [mail://<name>]
-* The name of the stanza should be an email address which would be used to connect to the server.
+* The name of the stanza should be an email address, which show source email box.
 
 protocol = [POP3|IMAP]
 * The protocol to be used to fetch emails from the server
 
 mailserver = <value>
 * This is the mailserver to fetch mails from
+
+mail_user = <user id for mail account>
+* User credential which are used to log in mailserver.
 
 password = <value>
 * The password for the account provided in the stanza name
